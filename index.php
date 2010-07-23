@@ -4,11 +4,6 @@
 # super-simple online note-book
 #
 
-# TODO add button/link to log out
-# TODO fix css style
-# TODO fixa inloggningsfel -> render_login_page med felmeddelande
-
-option( 'debug', true );
 option( 'root', dirname( __FILE__ ) . '/' );
 option( 'passwd_file', option('root') . 'users.ini' );
 option( 'data_dir', option('root') . 'data/' );
@@ -40,8 +35,7 @@ if( is_post() && isset( $_GET['login'] ) ) {
 	!empty( $_POST['id'] ) and !empty( $_POST['password'] )
 		or render_login_page( 'Du måste ange användarnamn och lösenord', 400 );
 
-	$hash = sha1( $_POST['password'] );
-	$_SESSION['user'] = array( 'id' => $_POST['id'], 'hash' => $hash );
+	$hash = $_SESSION['user'] = array( 'id' => $_POST['id'], 'hash' => sha1( $_POST['password'] ) );
 
 # logout?
 } elseif( is_post() && isset( $_GET['logout'] ) ) {
@@ -80,7 +74,7 @@ file_exists( $file )
 # save?
 if( $_SERVER['REQUEST_METHOD'] == 'POST' && isset( $_GET['save'] ) ) {
 	isset( $_POST['data'] )	or error( 400, 'Need data' );
-	@file_put_contents( $file, $_POST['data'] )	or error( 500, 'Error saving data' );
+	@file_put_contents( $file, $_POST['data'] )	!== false or error( 500, 'Error saving data' );
 	updated( $_SERVER['REQUEST_TIME'], true );
 	title('Anteckningar');
 }
@@ -150,7 +144,7 @@ function user( $user = '' )
 
 function render_date( $date )
 {
-	return strftime( '%A %e %B, %Y kl. %H:%M', $date );
+	return strftime( '%A %e %B, %Y kl. %H:%M:%S', $date );
 }
 
 function render_login_page( $error = '' )
@@ -209,7 +203,7 @@ updated() . '
 function _render_content( $c )
 {
 	$title = title();
-	
+	$u = user();
 	$m = alert();
 	if( $m ) {
 		$m = '<div class="alert"><p>' . $m . '</p></div>';
@@ -217,7 +211,7 @@ function _render_content( $c )
 
 	$l = $class = '';
 	if( user() ) {
-		$l = '<form method="post" action="?logout" class="logout"><input type="submit" value="Logga ut" /></form>';
+		$l = '<form method="post" action="?logout" class="logout"><input type="submit" value="Logga ut" /><p>Inloggad som <strong>' . $u . '</strong></p></form>';
 	} else {
 		$class = ' class="login"';
 	}
@@ -239,6 +233,11 @@ h1 {
 	position: absolute;
 	right: 0;
 	top: 0;
+	text-align: right;
+}
+.logout p {
+	margin: 5px 0;
+	color: #666;
 }
 .alert {
 	text-align: center;
